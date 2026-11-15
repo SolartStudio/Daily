@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Дневник"><title>Дневник планов и задач</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f3f5fa;--card:#fff;--line:#e2e7f0;--text:#1c2433;--muted:#6b7689;
+  --red:#e5484d;--orange:#f08a24;--yellow:#e8b814;--green:#2fa866;--blue:#2d8cf0;
+}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:1100px;margin:auto;padding:22px 14px 80px}
+h1{font-size:clamp(26px,5vw,34px);margin:0 0 4px}
+.muted{color:var(--muted)}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:9px 13px;transition:.15s}
+button:hover{background:#eef2fa}
+button.primary{background:#2d5bd6;border-color:#2d5bd6;color:#fff}
+button.primary:hover{background:#244bb5}
+button.danger{color:#c4343a;border-color:#f0c4c6}
+button.danger:hover{background:#fdeeee}
+.filebutton{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 13px;cursor:pointer}
+.filebutton:hover{background:#eef2fa}
+.filebutton input{display:none}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 8px}
+#status{font-size:13px;margin:0 0 14px}
+input[type=text],input[type=number],input[type=date],textarea{
+  width:100%;min-width:0;font:inherit;color:var(--text);background:#fff;
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+input:focus,textarea:focus{outline:2px solid #9bbcf7;border-color:#9bbcf7}
+
+/* навигация по разделам */
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 80%,transparent);padding:8px 0}
+.nav a{display:flex;align-items:center;gap:7px;text-decoration:none;color:var(--text);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 13px 5px 6px;font-weight:600;font-size:14px}
+.nav a b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;color:#fff;font-size:13px}
+
+/* раздел */
+.section{margin-top:28px}
+.sec-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;color:#fff;margin-bottom:14px}
+.sec-head .letter{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.25);font-size:20px;font-weight:800}
+.sec-head h2{margin:0;font-size:20px}
+.sec-head small{margin-left:auto;opacity:.9}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:14px;align-items:start}
+.add-goal{margin-top:14px;width:100%;border-style:dashed;border-width:2px;padding:12px;font-weight:600;color:var(--muted);background:transparent}
+.add-goal:hover{background:#fff;color:var(--text)}
+
+/* цель */
+.goal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(20,30,60,.05);border-top:5px solid var(--pc,#ccc)}
+.goal.completed{background:#f6fbf8;border-color:#cfe9da}
+.goal-top{display:flex;gap:10px;align-items:center}
+.goal-name{font-size:18px;font-weight:700;border-color:transparent;background:transparent;padding:6px 8px}
+.goal-name:hover{border-color:var(--line)}
+.pct{flex:none;min-width:64px;text-align:center;font-weight:800;font-size:17px;color:#fff;background:var(--pc,#ccc);border-radius:999px;padding:4px 12px}
+.pct.yellow{color:#3b2f00}
+.track{height:10px;background:#e9edf4;border-radius:8px;overflow:hidden;margin:12px 0 4px}
+.fill{height:100%;width:0;background:var(--pc,#ccc);border-radius:8px;transition:width .3s,background .3s}
+.count{font-size:12px;color:var(--muted)}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:#1f7a4a;background:#dcf3e5;border-radius:6px;padding:2px 8px;margin-left:6px}
+.steps{display:grid;gap:6px;margin-top:12px}
+.step{display:flex;align-items:center;gap:9px}
+.step .n{flex:none;width:20px;text-align:right;font-size:12px;color:var(--muted)}
+.step input[type=checkbox]{flex:none;width:20px;height:20px;accent-color:var(--pc,#2d8cf0);cursor:pointer}
+.step input[type=checkbox]:disabled{opacity:.35;cursor:not-allowed}
+.step input[type=text].done{text-decoration:line-through;color:var(--muted);background:#f6f8fb}
+.add-step{margin-top:10px;font-size:13px;padding:6px 11px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.actions .spacer{flex:1}
+
+/* числовые цели */
+details.metrics{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#fafbfd}
+details.metrics summary{cursor:pointer;font-weight:600;font-size:14px;color:#44506a}
+.metric{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.metric:first-of-type{border-top:0}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.metric label{display:block;font-size:12px;color:var(--muted)}
+.metric .mtrack{height:7px;background:#e9edf4;border-radius:6px;overflow:hidden;margin:8px 0 2px}
+.metric .mfill{height:100%;background:#2d8cf0;width:0}
+.mprog{font-size:12px;color:var(--muted)}
+.metric .mdel{font-size:12px;padding:3px 8px;margin-top:6px}
+
+/* журнал */
+.journal{margin-top:36px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+.journal h2{margin:0 0 4px;font-size:21px}
+.entry{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.entry-head{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.entry-head select{flex:1;min-width:160px;font:inherit;color:var(--text);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.eng{display:flex;align-items:center;gap:10px;margin-top:8px}
+.eng .lab{flex:none;font-size:12px;color:var(--muted);width:92px}
+.eng .etrack{flex:1;height:8px;background:#e9edf4;border-radius:8px;overflow:hidden}
+.eng .efill{height:100%;width:0;background:var(--ec,#ccc);border-radius:8px;transition:width .3s,background .3s}
+.eng .epct{flex:none;min-width:50px;text-align:center;font-weight:700;font-size:13px;color:#fff;background:var(--ec,#ccc);border-radius:999px;padding:1px 9px}
+.eng .epct.yellow{color:#3b2f00}
+.entry-head input{max-width:180px}
+.entry textarea{min-height:90px;resize:vertical}
+.footnote{margin-top:20px;color:var(--muted);font-size:13px}
+
+/* окно подтверждения */
+.overlay{position:fixed;inset:0;background:rgba(20,28,45,.45);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{background:#fff;border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal h3{margin:0 0 8px;font-size:18px}
+.modal p{margin:0 0 18px;color:#44506a}
+.modal .btns{display:flex;gap:10px;justify-content:flex-end}
+
+@media(max-width:520px){main{padding:14px 10px 70px}.goal{padding:12px}.goal-name{font-size:16px}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Дневник планов и задач</h1>
+  <p id="status" hidden></p>
+  <nav class="nav" id="nav"></nav>
+  <div id="sections"></div>
+
+  <section class="journal">
+    <h2>Дневные отчёты</h2>
+    <p class="muted" style="margin:0 0 10px">Результаты и наблюдения по твоим целям.</p>
+    <button id="add-entry" class="primary">+ Добавить</button>
+    <div id="entries"></div>
+  </section>
+
+  <p class="footnote">Данные сохраняются в браузере этого устройства и между устройствами не синхронизируются.</p>
+</main>
+
+<script>
+const KEY='plans-diary-clean-v1';
+const SECTIONS=[
+  {id:'work',tag:'Р',name:'Работа',color:'#4f46e5'},
+  {id:'personal',tag:'Л',name:'Личные проекты',color:'#0d9488'},
+  {id:'creative',tag:'Т',name:'Творчество',color:'#db2777'},
+  {id:'ach',tag:'Д',name:'Достижения',color:'#475569'},
+  {id:'ideas',tag:'И',name:'Идеи',color:'#7c3aed'}
+];
+const MIN_STEPS=10;
+let uid=0;const newId=()=>'g'+Date.now().toString(36)+(uid++);
+
+function mkSteps(list){
+  const s=list.map(t=>({t,d:false}));
+  while(s.length<MIN_STEPS)s.push({t:'',d:false});
+  return s;
+}
+function mkGoal(section,name,steps,metrics){
+  return{id:newId(),section,origin:section,name,steps:mkSteps(steps||[]),metrics:metrics||[],done:false,doneDate:''};
+}
+function defaults(){return{goals:[],journal:[]};}
+
+/* миграция старой копии (v2: 10 проектов) */
+function migrateV2(d){
+  const map=['work','work','work','personal','personal','creative','creative','ach','ach','ideas'];
+  const goals=d.projects.map((p,i)=>{
+    const texts=[...(p.tasks||[]),...(p.blanks||[])].filter(t=>(t.text||'').trim());
+    const g=mkGoal(map[i],p.name||'Цель',[]);
+    g.steps=texts.map(t=>({t:t.text,d:!!t.done}));
+    while(g.steps.length<MIN_STEPS)g.steps.push({t:'',d:false});
+    g.metrics=(p.metrics||[]).map(m=>({name:m.name||'',current:Number(m.current)||0,target:Number(m.target)||0}));
+    return g;
+  });
+  return{goals,journal:(d.journal||[]).map(e=>({id:newId(),date:e.date,text:e.text,goalId:'',goalName:''}))};
+}
+function normalize(d){
+  if(d&&Array.isArray(d.projects))return migrateV2(d);
+  if(!d||!Array.isArray(d.goals))throw Error('Неверный формат');
+  d.goals.forEach(g=>{
+    g.id=g.id||newId();
+    if(!SECTIONS.some(s=>s.id===g.section))g.section='ideas';
+    g.origin=g.origin||g.section;g.name=g.name||'';
+    g.steps=Array.isArray(g.steps)?g.steps.map(s=>({t:s.t||'',d:!!s.d})):[];
+    while(g.steps.length<MIN_STEPS)g.steps.push({t:'',d:false});
+    g.metrics=Array.isArray(g.metrics)?g.metrics:[];
+    g.done=!!g.done;g.doneDate=g.doneDate||'';
+  });
+  d.journal=(Array.isArray(d.journal)?d.journal:[]).map(e=>({id:e.id||newId(),date:e.date||'',text:e.text||'',goalId:e.goalId||'',goalName:e.goalName||''}));
+  return d;
+}
+
+let state;
+try{
+  const s=localStorage.getItem(KEY);
+  if(s)state=normalize(JSON.parse(s));
+  else state=defaults();
+}catch(e){state=defaults();}
+
+const $=id=>document.getElementById(id);
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));$('status').textContent='Изменения сохранены';}
+  catch(e){$('status').textContent='Автосохранение недоступно: используй «Скачать копию»';}
+}
+function h(tag,attrs,...kids){
+  const e=document.createElement(tag);
+  for(const k in(attrs||{})){
+    if(k==='class')e.className=attrs[k];
+    else if(k.startsWith('on'))e[k]=attrs[k];
+    else if(k==='value')e.value=attrs[k];
+    else if(attrs[k]!==false&&attrs[k]!==undefined)e.setAttribute(k,attrs[k]);
+  }
+  kids.flat().forEach(c=>{if(c!=null)e.append(c.nodeType?c:document.createTextNode(c))});
+  return e;
+}
+
+/* прогресс */
+function calc(g){
+  const f=g.steps.filter(s=>s.t.trim());
+  const d=f.filter(s=>s.d).length;
+  return{total:f.length,done:d,pct:f.length?d/f.length*100:0};
+}
+function colorFor(p){
+  if(p<20)return'var(--red)';
+  if(p<40)return'var(--orange)';
+  if(p<60)return'var(--yellow)';
+  if(p<80)return'var(--green)';
+  return'var(--blue)';
+}
+function paint(card,g){
+  const c=calc(g),col=colorFor(c.pct);
+  card.style.setProperty('--pc',col);
+  const pill=card.querySelector('.pct');
+  pill.textContent=Math.round(c.pct)+'%';
+  pill.classList.toggle('yellow',c.pct>=40&&c.pct<60);
+  card.querySelector('.fill').style.width=c.pct+'%';
+  card.querySelector('.count').firstChild.textContent=`Результат: выполнено ${c.done} из ${c.total}`;
+}
+
+/* вовлечённость: день с отчётом +10%, день без отчёта −10% (0..100) */
+function localISO(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function dayNum(iso){const[y,m,d]=iso.split('-').map(Number);return Math.round(Date.UTC(y,m-1,d)/86400000)}
+function engagement(g){
+  const days=new Set(state.journal.filter(e=>e.goalId===g.id&&e.date&&e.text.trim()).map(e=>dayNum(e.date)));
+  if(!days.size)return 0;
+  const today=dayNum(localISO());
+  let end=today;
+  if(g.done&&g.doneISO)end=Math.min(today,dayNum(g.doneISO));
+  let v=0;
+  for(let d=Math.min(...days);d<=end;d++){
+    if(days.has(d))v=Math.min(100,v+10);
+    else if(d<today)v=Math.max(0,v-10);
+  }
+  return v;
+}
+function paintEng(card,g){
+  const v=engagement(g);
+  card.style.setProperty('--ec',colorFor(v));
+  card.querySelector('.efill').style.width=v+'%';
+  const p=card.querySelector('.epct');
+  p.textContent=v+'%';
+  p.classList.toggle('yellow',v>=40&&v<60);
+}
+function refreshEng(){
+  document.querySelectorAll('.goal').forEach(card=>{
+    const g=state.goals.find(x=>x.id===card.dataset.id);
+    if(g)paintEng(card,g);
+  });
+}
+
+/* окно подтверждения */
+function ask(title,text,okLabel,danger){
+  return new Promise(res=>{
+    const close=v=>{ov.remove();res(v)};
+    const ov=h('div',{class:'overlay',onclick:e=>{if(e.target===ov)close(false)}},
+      h('div',{class:'modal'},
+        h('h3',{},title),h('p',{},text),
+        h('div',{class:'btns'},
+          h('button',{onclick:()=>close(false)},'Отмена'),
+          h('button',{class:danger?'danger':'primary',onclick:()=>close(true)},okLabel))));
+    document.body.append(ov);
+  });
+}
+
+/* числовые цели */
+function metricEl(g,m){
+  const el=h('div',{class:'metric'});
+  const bar=h('div',{class:'mfill'}),pr=h('div',{class:'mprog'});
+  const upd=()=>{
+    const p=m.target>0?Math.min(100,Math.max(0,m.current/m.target*100)):0;
+    bar.style.width=p+'%';
+    pr.textContent=p.toFixed(1)+'% · осталось: '+Math.max(0,m.target-m.current).toLocaleString('ru-RU');
+  };
+  const nm=h('input',{type:'text',value:m.name,placeholder:'Название показателя',oninput:e=>{m.name=e.target.value;save()}});
+  const cur=h('input',{type:'number',min:'0',value:m.current,oninput:e=>{m.current=Number(e.target.value)||0;upd();save()}});
+  const tg=h('input',{type:'number',min:'0',value:m.target,oninput:e=>{m.target=Number(e.target.value)||0;upd();save()}});
+  el.append(nm,
+    h('div',{class:'twocol'},h('label',{},'Сейчас',cur),h('label',{},'Цель',tg)),
+    h('div',{class:'mtrack'},bar),pr,
+    h('button',{class:'mdel',onclick:async()=>{
+      if(await ask('Удалить показатель?','«'+(m.name||'без названия')+'» будет удалён.','Удалить',true)){
+        g.metrics.splice(g.metrics.indexOf(m),1);save();render();
+      }}},'Удалить показатель'));
+  upd();return el;
+}
+
+/* карточка цели */
+function goalEl(g){
+  const card=h('div',{class:'goal'+(g.done?' completed':''),'data-id':g.id});
+  const name=h('input',{type:'text',class:'goal-name',value:g.name,placeholder:'Название цели',
+    oninput:e=>{g.name=e.target.value;save();refreshSelects()}});
+  const top=h('div',{class:'goal-top'},name,h('span',{class:'pct'},'0%'));
+  const count=h('div',{class:'count'},'',g.done?h('span',{class:'badge'},'Завершено'+(g.doneDate?' · '+g.doneDate:'')):null);
+  const stepsBox=h('div',{class:'steps'});
+
+  const stepEl=(s,i)=>{
+    const cb=h('input',{type:'checkbox',disabled:!s.t.trim(),'aria-label':'Пункт выполнен'});
+    cb.checked=s.d;
+    const tx=h('input',{type:'text',value:s.t,placeholder:'Этап '+(i+1)});
+    tx.classList.toggle('done',s.d&&!!s.t.trim());
+    cb.onchange=()=>{s.d=cb.checked;tx.classList.toggle('done',s.d);paint(card,g);save()};
+    tx.oninput=()=>{s.t=tx.value;cb.disabled=!tx.value.trim();
+      if(!tx.value.trim()){tx.classList.remove('done')}else tx.classList.toggle('done',s.d);
+      paint(card,g);save()};
+    return h('div',{class:'step'},h('span',{class:'n'},i+1),cb,tx);
+  };
+  g.steps.forEach((s,i)=>stepsBox.append(stepEl(s,i)));
+
+  const addStep=h('button',{class:'add-step',onclick:()=>{
+    const s={t:'',d:false};g.steps.push(s);
+    const el=stepEl(s,g.steps.length-1);stepsBox.append(el);
+    el.querySelector('input[type=text]').focus();save();
+  }},'+ Добавить пункт');
+
+  const metrics=h('details',{class:'metrics'},h('summary',{},'Числовые показатели'+(g.metrics.length?' ('+g.metrics.length+')':'')));
+  if(g.metrics.length)metrics.open=true;
+  g.metrics.forEach(m=>metrics.append(metricEl(g,m)));
+  metrics.append(h('button',{class:'add-step',onclick:()=>{
+    g.metrics.push({name:'Новый показатель',current:0,target:100});save();render();
+  }},'+ Числовой показатель'));
+
+  const actions=h('div',{class:'actions'});
+  if(!g.done){
+    actions.append(h('button',{class:'primary',onclick:async()=>{
+      if(await ask('Завершить задачу?','Цель «'+(g.name||'без названия')+'» будет отмечена завершённой и перенесена в раздел «Достижения».','Завершить')){
+        g.done=true;g.doneDate=new Date().toLocaleDateString('ru-RU');g.doneISO=localISO();
+        g.origin=g.section==='ach'?g.origin:g.section;
+        g.section='ach';
+        state.goals.splice(state.goals.indexOf(g),1);state.goals.push(g);
+        save();render();
+      }}},'✓ Завершить задачу'));
+  }else{
+    actions.append(h('button',{onclick:()=>{
+      g.done=false;g.doneDate='';g.doneISO='';g.section=g.origin||'ideas';save();render();
+    }},'↩ Вернуть в работу'));
+  }
+  actions.append(h('span',{class:'spacer'}),h('button',{class:'danger',onclick:async()=>{
+    if(await ask('Удалить цель?','Цель «'+(g.name||'без названия')+'» и все её пункты будут удалены без возможности восстановления.','Удалить',true)){
+      state.goals.splice(state.goals.indexOf(g),1);save();render();
+    }}},'Удалить'));
+
+  const eng=h('div',{class:'eng',title:'Растёт на 10% за каждый день с отчётом, падает на 10% за день без отчёта'},h('span',{class:'lab'},'Вовлечённость'),h('div',{class:'etrack'},h('div',{class:'efill'})),h('span',{class:'epct'},'0%'));
+  card.append(top,h('div',{class:'track'},h('div',{class:'fill'})),count,eng,stepsBox,addStep,metrics,actions);
+  paint(card,g);paintEng(card,g);
+  return card;
+}
+
+/* разделы */
+function render(){
+  const nav=$('nav'),box=$('sections');
+  nav.replaceChildren();box.replaceChildren();
+  SECTIONS.forEach(sec=>{
+    nav.append(h('a',{href:'#sec-'+sec.id},h('b',{style:'background:'+sec.color},sec.tag),sec.name));
+    const goals=state.goals.filter(g=>g.section===sec.id);
+    const grid=h('div',{class:'grid'});
+    goals.forEach(g=>grid.append(goalEl(g)));
+    const add=h('button',{class:'add-goal',onclick:()=>{
+      const g=mkGoal(sec.id,'Новая цель',[]);
+      state.goals.push(g);save();render();
+      const inp=document.querySelector('[data-id="'+g.id+'"] .goal-name');
+      if(inp){inp.focus();inp.select();inp.scrollIntoView({block:'center',behavior:'smooth'})}
+    }},'+ Новая цель в разделе «'+sec.name+'»');
+    box.append(h('section',{class:'section',id:'sec-'+sec.id},
+      h('div',{class:'sec-head',style:'background:'+sec.color},
+        h('span',{class:'letter'},sec.tag),h('h2',{},sec.name),h('small',{},goals.length+' '+plural(goals.length))),
+      grid,add));
+  });
+  renderJournal();
+}
+function plural(n){const a=n%10,b=n%100;return b>10&&b<15?'целей':a===1?'цель':a>1&&a<5?'цели':'целей'}
+
+/* журнал */
+function goalLabel(g){return g.name.trim()||'Без названия'}
+function fillSelect(sel,e){
+  sel.replaceChildren(h('option',{value:''},'— выберите проект или задачу —'));
+  SECTIONS.forEach(sec=>{
+    const gs=state.goals.filter(g=>g.section===sec.id);
+    if(!gs.length)return;
+    const og=h('optgroup',{label:sec.tag+' · '+sec.name});
+    gs.forEach(g=>og.append(h('option',{value:g.id},goalLabel(g))));
+    sel.append(og);
+  });
+  if(e.goalId&&!state.goals.some(g=>g.id===e.goalId))
+    sel.append(h('option',{value:e.goalId},(e.goalName||'Цель')+' (удалена)'));
+  sel.value=e.goalId||'';
+}
+function refreshSelects(){
+  document.querySelectorAll('.entry select').forEach(sel=>fillSelect(sel,sel._e));
+}
+function renderJournal(){
+  const box=$('entries');box.replaceChildren();
+  state.journal.forEach(e=>{
+    const date=h('input',{type:'date',value:e.date,oninput:ev=>{e.date=ev.target.value;save();refreshEng()}});
+    const sel=h('select',{'aria-label':'Проект или задача'});
+    sel._e=e;fillSelect(sel,e);
+    sel.onchange=()=>{
+      e.goalId=sel.value;
+      const g=state.goals.find(x=>x.id===sel.value);
+      e.goalName=g?goalLabel(g):(sel.value?e.goalName:'');
+      save();refreshEng();
+    };
+    const ta=h('textarea',{placeholder:'Результаты и наблюдения',oninput:ev=>{e.text=ev.target.value;save();refreshEng()}});
+    ta.value=e.text;
+    box.append(h('div',{class:'entry'},
+      h('div',{class:'entry-head'},date,sel,h('button',{class:'danger',onclick:async()=>{
+        if(await ask('Удалить запись?','Запись будет удалена, вовлечённость пересчитается.','Удалить',true)){
+          state.journal.splice(state.journal.indexOf(e),1);save();renderJournal();refreshEng();
+        }}},'Удалить')),ta));
+  });
+}
+$('add-entry').onclick=()=>{
+  state.journal.unshift({id:newId(),date:localISO(),text:'',goalId:'',goalName:''});
+  save();renderJournal();
+  const t=document.querySelector('#entries .entry select');if(t)t.focus();
+};
+
+render();
+</script>
+</body>
+</html>
